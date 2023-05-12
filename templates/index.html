@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CarParking</title>
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+	{% if 'logged_in' in session %}
+    <p>Welcome, {{ session['username'] }}!</p>
+    {% endif %}
+	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDzwnL1mpLfuNgcjEvwvyTgoV7CCPDpY1A"></script>
+	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDzwnL1mpLfuNgcjEvwvyTgoV7CCPDpY1A&libraries=places"></script>
+
+</head>
+<body>
+    <header>
+        <h1>CarParking</h1>
+        <nav>
+            <ul>
+				<li><a href="#">Home</a></li>
+				{% if not session.logged_in %}
+				<li class="nav-link"><a href="/register">Register</a></li>
+				<li class="nav-link"><a href="/login">Login</a></li>
+				{% else %}
+				<li><a href="#about-us" onclick="scrollToSection(event)">About Us</a></li>
+				<li><a href="#contact" onclick="scrollToSection(event)">Contact</a></li>
+				<li class="nav-link"><a href="/logout">Log out</a></li>
+				{% endif %}
+			</ul>
+        </nav>
+    </header>
+	
+	<script>
+		function initMap() {
+			// Get the user's current location
+			if (navigator.geolocation) {
+				navigator.geolocation.getCurrentPosition(function(position) {
+					var userLatLng = {
+						lat: position.coords.latitude,
+						lng: position.coords.longitude
+					};
+		
+					// Initialize the map centered on the user's current location
+					var map = new google.maps.Map(document.getElementById('map'), {
+						center: userLatLng,
+						zoom: 15
+					});
+					
+					// Add a marker at the user's current location
+					var marker = new google.maps.Marker({
+						position: userLatLng,
+						map: map,
+						title: "Your current location"
+					});
+					
+					var marker = new google.maps.Marker({
+						position: {lat: -33.86423625359152, lng: 151.19296593065056},
+						map: map,
+						title: 'Opera House Parking'
+					  });
+		
+					// Add search box to map
+					var input = document.getElementById('location');
+					var autocomplete = new google.maps.places.Autocomplete(input);
+					autocomplete.bindTo('bounds', map);
+					
+					autocomplete.addListener('place_changed', function() {
+						// Get the selected place from the search box
+						var place = autocomplete.getPlace();
+						
+						// Check if the place is valid
+						if (!place.geometry) {
+							console.log("Place details not found");
+							return;
+						}
+						
+						// Center the map around the marker
+						map.setCenter(place.geometry.location);
+						map.setZoom(15);
+					});
+				
+					
+					var infoWindow = new google.maps.InfoWindow();
+
+					google.maps.event.addListener(marker, 'click', function() {
+					  var xhr = new XMLHttpRequest();
+					  xhr.open('GET', 'http://127.0.0.1:8002/parking_info');
+					  xhr.onload = function() {
+						if (xhr.status === 200) {
+						  var response = JSON.parse(xhr.responseText);
+						  var contentString = '<div id="content">' +
+							'<p>Free_spaces: ' + response.free_spaces + '<br>Total_spaces: ' + response.total_spaces + '</p>' +
+							'<button onclick="openReservationPage()">Reserve</button>' +
+							'</div>';
+						  infoWindow.setContent(contentString);
+						  infoWindow.open(map, marker);
+						} else {
+						  console.log('Request failed. Returned status of ' + xhr.status);
+						}
+					  };
+					  xhr.send();
+					});
+		
+					
+				});
+			} else {
+				// Geolocation is not supported by this browser
+				var map = new google.maps.Map(document.getElementById('map'), {
+					center: { lat: -34.397, lng: 150.644 },
+					zoom: 8
+				});
+			}
+		}
+		
+	</script>
+	
+
+	<script>
+		function scrollToSection(event) {
+			event.preventDefault();
+			const section = document.querySelector(event.target.hash);
+			window.scrollTo({
+				top: section.offsetTop,
+				behavior: "smooth"
+			});
+		}
+		</script>
+		
+    <main>
+        <section class="hero">
+            <h2>Welcome to CarParking</h2>
+            <h3>Leave your car in the car park without worrying about its safety</h3>
+            <a href="https://tome.app/carparking/template-freelancercontractor-about-me-clh9yxq3y02nv6c428f810zlm" class="btn">Begin</a>
+        </section>
+		
+        <section class="services">
+            <h2>Our Services</h2>
+            <div class="service">
+                <i class="fa fa-car"></i>
+                <h3>Parking</h3>
+                <p>Here are provided parking spaces in secure, enclosed car parks</p>
+            </div>
+            <div class="service">
+                <i class="fa fa-clock-o"></i>
+                <h3>Flexible pricing</h3>
+                <p>Payment is made only for the actual time of parking, not for the full session</p>
+            </div>
+            <div class="service">
+                <i class="fa fa-mobile"></i>
+                <h3>Mobile app</h3>
+                <p>Manage the parking process through a convenient mobile app</p>
+            
+			</div>
+				<div id="map" style="height: 400px;"></div>
+			</div>
+			
+			
+			<div id="parking-form">
+				<form id="reserve-form" method="POST" action="http://127.0.0.1:8002//parking/reserve">
+				  <input type="hidden" name="id" value="{{ parking_id }}">
+				 
+				</form>
+			  </div>
+			
+			
+			<section class="search">
+				<h2>Parking Search</h2>
+				<form method="post" action="/search" onsubmit="event.preventDefault(); initMap();">
+				  <label for="location">Location:</label>
+				  <input type="text" id="location" name="location" placeholder="Enter address">
+				  <label for="date">Date:</label>
+				  <input type="date" id="date" name="date">
+				  <label for="time">Time:</label>
+				  <input type="time" id="time" name="time">
+				  <button type="submit">Search</button>
+				</form>
+			  </section>
+        
+		<section id="about-us">
+  <h2>About Us</h2>
+  <p>Smart Parking Company is a leading provider of innovative parking solutions for businesses and organizations. We use state-of-the-art technology to help you manage your parking facilities more efficiently, reduce congestion, and improve the overall parking experience for your customers and employees.Smart parking solutions are increasingly popular in urban areas where parking is often a challenge. By using technology to optimize parking space utilization, these companies are helping to reduce traffic congestion, pollution, and carbon emissions associated with cars circling in search of a parking spot.
+
+	In addition to helping drivers find parking, smart parking companies also offer services to parking lot operators. They can help with parking lot management, such as monitoring parking spaces, detecting parking violations, and issuing parking tickets. They can also provide data analytics and insights to help parking lot operators optimize their parking facilities and improve their revenue.
+	
+	Overall, smart parking companies are playing an important role in making parking more efficient, convenient, and sustainable. With the rise of smart cities and the growing demand for sustainable transportation solutions, the future of smart parking looks bright.</p>
+</section>
+<section id="contact">
+    <h2>Contact Us</h2>
+    <p>For any questions or concerns, please contact us at:</p>
+    <ul>
+        <li>Email: info@carparking.com</li>
+        <li>Phone: 555-555-5555</li>
+        <li>Address: 123 Main Street, Sydney, Australia</li>
+    </ul>
+</section>
+    </main>
+   
+	<footer>
+        <p>CarParking &copy; 2023</p>
+    </footer>
+	
+	<script>
+		window.onload = function() {
+		  initMap();
+		};	
+	  </script>
+	  
+	  <script>
+
+		function openReservationPage() {
+			window.location.href = '/reservation';
+		}
+		
+		function initializeMap(event) {
+			event.preventDefault(); // prevent form submission
+		  
+			// Get user's location input
+			const location = document.getElementById("location").value;
+		  
+			// Create a new Geocoder object to convert location to coordinates
+			const geocoder = new google.maps.Geocoder();
+		  
+			// Use geocoder to get coordinates of location
+			geocoder.geocode({ address: location }, (results, status) => {
+			  if (status === "OK") {
+				// Get coordinates of location
+				const locationCoords = results[0].geometry.location;
+		  
+				// Create a new map centered on the location
+				const map = new google.maps.Map(document.getElementById("map"), {
+				  center: locationCoords,
+				  zoom: 15,
+				});
+		  
+				// Add a marker at the location
+				const marker = new google.maps.Marker({
+				  position: locationCoords,
+				  map: map,
+				  title: "Selected location",
+				});
+		  
+				// Update the form with the coordinates of the selected location
+				document.getElementById("latitude").value = locationCoords.lat();
+				document.getElementById("longitude").value = locationCoords.lng();
+			  } else {
+				// Handle error
+				alert("Geocode was not successful for the following reason: " + status);
+			  }
+			});
+		  
+			return false;
+		  }
+		  
+</script>
+</body>
+</html>
